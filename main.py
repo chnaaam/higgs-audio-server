@@ -267,9 +267,11 @@ async def generate_voice_clone(request: VoiceCloneRequest):
     try:
         # Prepare audio content
         audio_content = None
+        reference_text = "Please use this voice as reference for cloning."
+        
         if request.reference_audio:
-            # Use uploaded base64 audio
-            audio_content = AudioContent(audio_url="", raw_audio=request.reference_audio)
+            # Use uploaded base64 audio  
+            audio_content = AudioContent(raw_audio=request.reference_audio, audio_url="placeholder")
         elif request.reference_voice:
             # Use built-in reference voice
             voice_file = voice_prompts_dir / f"{request.reference_voice}.wav"
@@ -279,7 +281,16 @@ async def generate_voice_clone(request: VoiceCloneRequest):
                     status_code=400, 
                     detail=f"Reference voice '{request.reference_voice}' not found. Available: {available_voices}"
                 )
+            # For built-in voices, only set audio_url (don't set raw_audio)
             audio_content = AudioContent(audio_url=str(voice_file))
+            
+            # For built-in voices, try to get the reference text
+            txt_file = voice_prompts_dir / f"{request.reference_voice}.txt"
+            if txt_file.exists():
+                try:
+                    reference_text = txt_file.read_text(encoding="utf-8").strip()
+                except Exception:
+                    pass
         else:
             raise HTTPException(status_code=400, detail="Either reference_audio or reference_voice must be provided")
         
@@ -288,13 +299,10 @@ async def generate_voice_clone(request: VoiceCloneRequest):
             scene_prompt=request.scene_prompt or DEFAULT_SCENE_PROMPT
         )
         
-        # Create ChatML sample with reference audio
+        # Create ChatML sample with reference audio (following the correct pattern)
         messages = [
             Message(role="system", content=system_prompt),
-            Message(role="user", content=[
-                TextContent("Please clone this voice: "),
-                audio_content
-            ]),
+            Message(role="user", content=reference_text),
             Message(role="assistant", content=audio_content),
             Message(role="user", content=request.text),
         ]
@@ -356,7 +364,7 @@ async def generate_multi_speaker(request: MultiSpeakerRequest):
                 audio_contents.append(AudioContent(audio_url=str(voice_file)))
         elif request.reference_audios:
             for audio_b64 in request.reference_audios:
-                audio_contents.append(AudioContent(audio_url="", raw_audio=audio_b64))
+                audio_contents.append(AudioContent(raw_audio=audio_b64, audio_url="placeholder"))
         
         # Build system message for multi-speaker
         system_prompt = build_system_message(
