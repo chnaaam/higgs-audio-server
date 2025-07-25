@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Higgs Audio v2 前端</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .form-section {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-row-three {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .generate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .progress-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-container.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .progress-bar-container {
+            position: relative;
+            height: 8px;
+            background: #e1e5e9;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-status {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .progress-dots {
+            display: inline-block;
+        }
+
+        .progress-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        .result-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .audio-player {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .play-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #e1e5e9;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 100%;
+            background: #667eea;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .time-display {
+            font-family: monospace;
+            color: #666;
+        }
+
+        .result-info {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .result-info h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-item {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #c33;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .config-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .config-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .config-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .config-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .config-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .config-btn:hover {
+            background: #5a67d8;
+        }
+
+        .config-btn.secondary {
+            background: #6c757d;
+        }
+
+        .config-btn.secondary:hover {
+            background: #5a6268;
+        }
+
+        .config-btn.success {
+            background: #28a745;
+        }
+
+        .config-btn.success:hover {
+            background: #218838;
+        }
+
+        .config-btn.danger {
+            background: #dc3545;
+        }
+
+        .config-btn.danger:hover {
+            background: #c82333;
+        }
+
+        .preset-select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+
+        .config-name-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        .config-name-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .saved-configs {
+            margin-top: 10px;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+
+        .config-item:hover {
+            background: #f8f9fa;
+        }
+
+        .config-item-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .config-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .config-item-btn {
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .config-item-btn:hover {
+            background: #e9ecef;
+        }
+
+        .config-item-btn.load {
+            color: #667eea;
+        }
+
+        .config-item-btn.delete {
+            color: #dc3545;
+        }
+
+        .voice-clone-section {
+            background: #f0f4ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px dashed #667eea;
+        }
+
+        .voice-clone-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .voice-clone-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .voice-clone-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .upload-area:hover {
+            border-color: #5a67d8;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #5a67d8;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .audio-preview {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #e1e5e9;
+            display: none;
+        }
+
+        .audio-preview.show {
+            display: block;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .preview-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .clone-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .clone-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            flex: 1;
+            transition: transform 0.2s ease;
+        }
+
+        .clone-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .clone-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .mode-switch {
+            display: flex;
+            background: #e1e5e9;
+            border-radius: 8px;
+            padding: 3px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .save-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .save-indicator.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .form-row,
+            .form-row-three,
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                margin: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Higgs Audio v2</h1>
+            <p>智能语音合成系统</p>
+        </div>
+
+        <div class="form-section">
+            <!-- 模式选择 -->
+            <div class="mode-switch">
+                <button class="mode-btn active" id="normalModeBtn" onclick="switchMode('normal')">📝 普通生成</button>
+                <button class="mode-btn" id="cloneModeBtn" onclick="switchMode('clone')">🎙️ 语音克隆</button>
+            </div>
+
+            <!-- 语音克隆区域 -->
+            <div class="voice-clone-section" id="voiceCloneSection" style="display: none;">
+                <div class="voice-clone-header">
+                    <div class="voice-clone-title">🎙️ 语音克隆</div>
+                    <div class="voice-clone-desc">上传参考音频文件，系统将使用该音色生成语音</div>
+                </div>
+
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('audioFileInput').click()">
+                    <div class="upload-icon">🎵</div>
+                    <div class="upload-text">点击上传音频文件</div>
+                    <div class="upload-hint">支持 WAV、MP3、FLAC 格式，建议时长3-30秒</div>
+                </div>
+
+                <input type="file" class="file-input" id="audioFileInput" accept=".wav,.mp3,.flac" onchange="handleAudioUpload(event)">
+
+                <div class="audio-preview" id="audioPreview">
+                    <div class="preview-header">
+                        <span class="preview-info" id="previewInfo">📄 文件信息</span>
+                        <button class="remove-btn" onclick="removeAudio()">✕ 移除</button>
+                    </div>
+                    <audio controls id="previewAudio" style="width: 100%;"></audio>
+                </div>
+            </div>
+
+            <!-- 配置管理 -->
+            <div class="config-section">
+                <div class="config-header">
+                    <span class="config-title">⚙️ 配置管理</span>
+                </div>
+                
+                <div class="config-row">
+                    <input type="text" class="config-name-input" id="configNameInput" placeholder="输入配置名称..." maxlength="20">
+                    <button class="config-btn success" onclick="saveNamedConfig()">💾 保存配置</button>
+                    <button class="config-btn secondary" onclick="resetConfig()">🔄 重置</button>
+                </div>
+
+                <div class="saved-configs" id="savedConfigs">
+                    <!-- 动态生成已保存的配置列表 -->
+                </div>
+            </div>
+
+            <!-- 服务器配置 -->
+            <div class="form-group">
+                <label for="apiUrl">API服务器地址</label>
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+            </div>
+
+            <!-- 文本输入 -->
+            <div class="form-group">
+                <label for="textInput">要合成的文本</label>
+                <textarea id="textInput" placeholder="请输入要转换为语音的文本内容...">Hello, this is a test of the Higgs Audio text-to-speech system.</textarea>
+            </div>
+
+            <!-- 场景描述 -->
+            <div class="form-group">
+                <label for="scenePrompt">场景描述（可选）</label>
+                <input type="text" id="scenePrompt" placeholder="Audio is recorded from a quiet room." value="Audio is recorded from a quiet room.">
+            </div>
+
+            <!-- 生成参数 -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="temperature">Temperature (0.0-2.0)</label>
+                    <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                </div>
+                <div class="form-group">
+                    <label for="topP">Top P (0.0-1.0)</label>
+                    <input type="number" id="topP" min="0" max="1" step="0.05" value="0.95">
+                </div>
+            </div>
+
+            <div class="form-row-three">
+                <div class="form-group">
+                    <label for="topK">Top K</label>
+                    <input type="number" id="topK" min="1" max="200" value="50">
+                </div>
+                <div class="form-group">
+                    <label for="maxTokens">最大Token数</label>
+                    <input type="number" id="maxTokens" min="1" max="4096" value="1024">
+                </div>
+                <div class="form-group">
+                    <label for="seed">随机种子（可选）</label>
+                    <input type="number" id="seed" placeholder="留空为随机">
+                </div>
+            </div>
+
+            <button class="generate-btn" id="generateBtn" onclick="generateSpeech()">
+                🎙️ 生成语音
+            </button>
+
+            <div class="loading" id="loading">
+                <p>🔄 正在生成语音，请稍候...</p>
+            </div>
+
+            <!-- 动态进度条 -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-header">
+                    <span class="progress-title">🎵 生成进度</span>
+                    <span class="progress-percentage" id="progressPercentage">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+                <div class="progress-status" id="progressStatus">
+                    正在初始化<span class="progress-dots"></span>
+                </div>
+            </div>
+
+            <!-- 结果展示 -->
+            <div class="result-section" id="resultSection">
+                <div class="audio-player">
+                    <div class="audio-controls">
+                        <button class="play-btn" id="playBtn" onclick="togglePlay()">▶️</button>
+                        <div class="progress-bar" id="progressBar" onclick="seekTo(event)">
+                            <div class="progress" id="progress"></div>
+                        </div>
+                        <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+                        <button class="download-btn" onclick="downloadAudio()">📥 下载</button>
+                    </div>
+                    <audio id="audioPlayer" preload="metadata"></audio>
+                </div>
+
+                <div class="result-info" id="resultInfo">
+                    <h3>生成信息</h3>
+                    <div class="info-grid" id="infoGrid">
+                        <!-- 动态填充 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="error" id="errorSection" style="display: none;">
+                <p id="errorMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保存指示器 -->
+    <div class="save-indicator" id="saveIndicator">
+        💾 配置已保存
+    </div>
+
+    <script>
+        let audioPlayer = null;
+        let currentAudioData = null;
+        let progressInterval = null;
+        let currentMode = 'normal'; // 'normal' or 'clone'
+        let uploadedAudioFile = null;
+
+        // 默认配置
+        const DEFAULT_CONFIG = {
+            apiUrl: 'http://localhost:8000',
+            text: 'Hello, this is a test of the Higgs Audio text-to-speech system.',
+            scenePrompt: 'Audio is recorded from a quiet room.',
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 50,
+            maxTokens: 1024,
+            seed: ''
+        };
+
+        // 页面加载时初始化
+        window.addEventListener('load', function() {
+            loadSavedConfig();
+            setupAutoSave();
+            displaySavedConfigs();
+            setupDragAndDrop();
+        });
+
+        // 模式切换
+        function switchMode(mode) {
+            currentMode = mode;
+            const normalBtn = document.getElementById('normalModeBtn');
+            const cloneBtn = document.getElementById('cloneModeBtn');
+            const voiceCloneSection = document.getElementById('voiceCloneSection');
+            const generateBtn = document.getElementById('generateBtn');
+
+            if (mode === 'normal') {
+                normalBtn.classList.add('active');
+                cloneBtn.classList.remove('active');
+                voiceCloneSection.style.display = 'none';
+                generateBtn.innerHTML = '🎙️ 生成语音';
+            } else {
+                normalBtn.classList.remove('active');
+                cloneBtn.classList.add('active');
+                voiceCloneSection.style.display = 'block';
+                generateBtn.innerHTML = '🎭 克隆语音';
+            }
+        }
+
+        // 设置拖拽上传
+        function setupDragAndDrop() {
+            const uploadArea = document.getElementById('uploadArea');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                uploadArea.classList.add('dragover');
+            }
+
+            function unhighlight() {
+                uploadArea.classList.remove('dragover');
+            }
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleAudioFile(files[0]);
+                }
+            }
+        }
+
+        // 处理音频上传
+        function handleAudioUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleAudioFile(file);
+            }
+        }
+
+        // 处理音频文件
+        function handleAudioFile(file) {
+            // 检查文件类型
+            if (!file.type.match(/audio\/(wav|mp3|mpeg|flac)/)) {
+                alert('请上传音频文件（WAV、MP3、FLAC）');
+                return;
+            }
+
+            // 检查文件大小（限制为 50MB）
+            if (file.size > 50 * 1024 * 1024) {
+                alert('文件过大，请选择小于 50MB 的音频文件');
+                return;
+            }
+
+            uploadedAudioFile = file;
+            displayAudioPreview(file);
+        }
+
+        // 显示音频预览
+        function displayAudioPreview(file) {
+            const audioPreview = document.getElementById('audioPreview');
+            const previewInfo = document.getElementById('previewInfo');
+            const previewAudio = document.getElementById('previewAudio');
+
+            // 显示文件信息
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            previewInfo.textContent = `📄 ${file.name} (${fileSize} MB)`;
+
+            // 创建音频URL
+            const audioUrl = URL.createObjectURL(file);
+            previewAudio.src = audioUrl;
+
+            audioPreview.classList.add('show');
+        }
+
+        // 移除音频
+        function removeAudio() {
+            uploadedAudioFile = null;
+            const audioPreview = document.getElementById('audioPreview');
+            const previewAudio = document.getElementById('previewAudio');
+            const audioFileInput = document.getElementById('audioFileInput');
+
+            audioPreview.classList.remove('show');
+            previewAudio.src = '';
+            audioFileInput.value = '';
+
+            // 释放对象URL
+            if (previewAudio.src) {
+                URL.revokeObjectURL(previewAudio.src);
+            }
+        }
+
+        // 将文件转换为Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    // 移除data:audio/xxx;base64,前缀
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // 获取当前配置
+        function getCurrentConfig() {
+            return {
+                apiUrl: document.getElementById('apiUrl').value,
+                text: document.getElementById('textInput').value,
+                scenePrompt: document.getElementById('scenePrompt').value,
+                temperature: parseFloat(document.getElementById('temperature').value),
+                topP: parseFloat(document.getElementById('topP').value),
+                topK: parseInt(document.getElementById('topK').value),
+                maxTokens: parseInt(document.getElementById('maxTokens').value),
+                seed: document.getElementById('seed').value
+            };
+        }
+
+        // 应用配置
+        function applyConfig(config) {
+            document.getElementById('apiUrl').value = config.apiUrl || DEFAULT_CONFIG.apiUrl;
+            document.getElementById('textInput').value = config.text || DEFAULT_CONFIG.text;
+            document.getElementById('scenePrompt').value = config.scenePrompt || DEFAULT_CONFIG.scenePrompt;
+            document.getElementById('temperature').value = config.temperature || DEFAULT_CONFIG.temperature;
+            document.getElementById('topP').value = config.topP || DEFAULT_CONFIG.topP;
+            document.getElementById('topK').value = config.topK || DEFAULT_CONFIG.topK;
+            document.getElementById('maxTokens').value = config.maxTokens || DEFAULT_CONFIG.maxTokens;
+            document.getElementById('seed').value = config.seed || DEFAULT_CONFIG.seed;
+        }
+
+        // 获取所有已保存的配置
+        function getSavedConfigs() {
+            try {
+                const configs = localStorage.getItem('higgs_audio_saved_configs');
+                return configs ? JSON.parse(configs) : {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        // 保存命名配置
+        function saveNamedConfig() {
+            const configNameInput = document.getElementById('configNameInput');
+            const configName = configNameInput.value.trim();
+            
+            if (!configName) {
+                alert('请输入配置名称');
+                return;
+            }
+            
+            const savedConfigs = getSavedConfigs();
+            const currentConfig = getCurrentConfig();
+            
+            // 添加时间戳
+            currentConfig.savedAt = new Date().toISOString();
+            
+            savedConfigs[configName] = currentConfig;
+            
+            localStorage.setItem('higgs_audio_saved_configs', JSON.stringify(savedConfigs));
+            localStorage.setItem('higgs_audio_config', JSON.stringify(currentConfig));
+            
+            configNameInput.value = '';
+            displaySavedConfigs();
+            showSaveIndicator(`已保存配置: ${configName}`);
+        }
+
+        // 加载指定配置
+        function loadConfig(configName) {
+            const savedConfigs = getSavedConfigs();
+            const config = savedConfigs[configName];
+            
+            if (config) {
+                applyConfig(config);
+                localStorage.setItem('higgs_audio_config', JSON.stringify(config));
+                showSaveIndicator(`已加载配置: ${configName}`);
+            }
+        }
+
+        // 删除配置
+        function deleteConfig(configName) {
+            if (confirm(`确定要删除配置 "${configName}" 吗？`)) {
+                const savedConfigs = getSavedConfigs();
+                delete savedConfigs[configName];
+                
+                localStorage.setItem('higgs_audio_saved_configs', JSON.stringify(savedConfigs));
+                displaySavedConfigs();
+                showSaveIndicator(`已删除配置: ${configName}`);
+            }
+        }
+
+        // 显示已保存的配置列表
+        function displaySavedConfigs() {
+            const savedConfigsContainer = document.getElementById('savedConfigs');
+            const savedConfigs = getSavedConfigs();
+            
+            if (Object.keys(savedConfigs).length === 0) {
+                savedConfigsContainer.innerHTML = '<p style="text-align: center; color: #666; font-size: 14px; padding: 10px;">暂无已保存的配置</p>';
+                return;
+            }
+            
+            const configItems = Object.entries(savedConfigs)
+                .sort(([,a], [,b]) => new Date(b.savedAt) - new Date(a.savedAt))
+                .map(([name, config]) => {
+                    const savedTime = new Date(config.savedAt).toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    return `
+                        <div class="config-item">
+                            <div>
+                                <div class="config-item-name">📝 ${name}</div>
+                                <div style="font-size: 12px; color: #666;">保存于 ${savedTime}</div>
+                            </div>
+                            <div class="config-item-actions">
+                                <button class="config-item-btn load" onclick="loadConfig('${name}')">📂 加载</button>
+                                <button class="config-item-btn delete" onclick="deleteConfig('${name}')">🗑️ 删除</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            savedConfigsContainer.innerHTML = configItems;
+        }
+
+        // 加载保存的配置（用于页面初始化）
+        function loadSavedConfig() {
+            try {
+                const savedConfig = localStorage.getItem('higgs_audio_config');
+                if (savedConfig) {
+                    const config = JSON.parse(savedConfig);
+                    applyConfig(config);
+                }
+            } catch (error) {
+                console.log('加载配置失败，使用默认配置');
+            }
+        }
+
+        // 重置配置
+        function resetConfig() {
+            if (confirm('确定要重置为默认配置吗？')) {
+                applyConfig(DEFAULT_CONFIG);
+                localStorage.setItem('higgs_audio_config', JSON.stringify(DEFAULT_CONFIG));
+                showSaveIndicator('已重置为默认配置');
+            }
+        }
+
+        // 显示保存指示器
+        function showSaveIndicator(message = '💾 配置已保存') {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.textContent = message;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // 设置自动保存
+        function setupAutoSave() {
+            const inputs = [
+                'apiUrl', 'textInput', 'scenePrompt', 
+                'temperature', 'topP', 'topK', 'maxTokens', 'seed'
+            ];
+            
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', debounce(autoSave, 1000));
+                    element.addEventListener('change', autoSave);
+                }
+            });
+        }
+
+        // 自动保存
+        function autoSave() {
+            const config = getCurrentConfig();
+            localStorage.setItem('higgs_audio_config', JSON.stringify(config));
+        }
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 更新进度条
+        function updateProgress(percentage, status) {
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const progressStatus = document.getElementById('progressStatus');
+            
+            progressBarFill.style.width = percentage + '%';
+            progressPercentage.textContent = Math.round(percentage) + '%';
+            progressStatus.innerHTML = status + '<span class="progress-dots"></span>';
+        }
+
+        // 模拟生成进度
+        function simulateProgress() {
+            let progress = 0;
+            const stages = [
+                { progress: 15, status: '正在加载模型' },
+                { progress: 30, status: '正在处理文本' },
+                { progress: 50, status: '正在生成音频特征' },
+                { progress: 70, status: '正在合成语音' },
+                { progress: 85, status: '正在优化音质' },
+                { progress: 95, status: '正在完成处理' }
+            ];
+            
+            let currentStage = 0;
+            
+            progressInterval = setInterval(() => {
+                if (currentStage < stages.length) {
+                    const stage = stages[currentStage];
+                    const targetProgress = stage.progress;
+                    
+                    if (progress < targetProgress) {
+                        progress += Math.random() * 3 + 1;
+                        progress = Math.min(progress, targetProgress);
+                        updateProgress(progress, stage.status);
+                    } else {
+                        currentStage++;
+                    }
+                }
+                
+                if (progress >= 95 && currentStage >= stages.length) {
+                    updateProgress(99, '即将完成');
+                }
+            }, 200 + Math.random() * 300);
+        }
+
+        // 完成进度
+        function completeProgress() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            updateProgress(100, '生成完成！');
+            
+            setTimeout(() => {
+                const progressContainer = document.getElementById('progressContainer');
+                progressContainer.classList.remove('show');
+            }, 1000);
+        }
+
+        // 重置进度
+        function resetProgress() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            updateProgress(0, '正在初始化');
+        }
+
+        // 生成语音
+        async function generateSpeech() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const text = document.getElementById('textInput').value.trim();
+            
+            if (!apiUrl || !text) {
+                showError('请填写API地址和文本内容');
+                return;
+            }
+
+            // 语音克隆模式检查
+            if (currentMode === 'clone' && !uploadedAudioFile) {
+                showError('请先上传参考音频文件');
+                return;
+            }
+
+            const generateBtn = document.querySelector('.generate-btn');
+            const loading = document.getElementById('loading');
+            const progressContainer = document.getElementById('progressContainer');
+            const resultSection = document.getElementById('resultSection');
+            const errorSection = document.getElementById('errorSection');
+
+            // 重置状态
+            generateBtn.disabled = true;
+            loading.classList.remove('show');
+            progressContainer.classList.add('show');
+            resultSection.classList.remove('show');
+            errorSection.style.display = 'none';
+            
+            // 重置并开始进度条
+            resetProgress();
+            simulateProgress();
+
+            try {
+                let endpoint, requestData;
+
+                if (currentMode === 'clone') {
+                    // 语音克隆模式
+                    endpoint = `${apiUrl}/generate/voice-clone`;
+                    
+                    // 转换音频文件为Base64
+                    const audioBase64 = await fileToBase64(uploadedAudioFile);
+                    
+                    requestData = {
+                        text: text,
+                        reference_audio: audioBase64,
+                        temperature: parseFloat(document.getElementById('temperature').value),
+                        top_p: parseFloat(document.getElementById('topP').value),
+                        top_k: parseInt(document.getElementById('topK').value),
+                        max_new_tokens: parseInt(document.getElementById('maxTokens').value)
+                    };
+                } else {
+                    // 普通生成模式
+                    endpoint = `${apiUrl}/generate`;
+                    requestData = {
+                        text: text,
+                        temperature: parseFloat(document.getElementById('temperature').value),
+                        top_p: parseFloat(document.getElementById('topP').value),
+                        top_k: parseInt(document.getElementById('topK').value),
+                        max_new_tokens: parseInt(document.getElementById('maxTokens').value)
+                    };
+                }
+
+                // 添加可选参数
+                const scenePrompt = document.getElementById('scenePrompt').value.trim();
+                if (scenePrompt) {
+                    requestData.scene_prompt = scenePrompt;
+                }
+
+                const seed = document.getElementById('seed').value.trim();
+                if (seed) {
+                    requestData.seed = parseInt(seed);
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                // 完成进度条
+                completeProgress();
+                
+                // 延迟显示结果，让用户看到完成动画
+                setTimeout(() => {
+                    displayResult(result);
+                }, 1000);
+
+            } catch (error) {
+                // 停止进度条并显示错误
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+                progressContainer.classList.remove('show');
+                showError(`生成失败: ${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+            }
+        }
+
+        // 显示结果
+        function displayResult(result) {
+            const resultSection = document.getElementById('resultSection');
+            const infoGrid = document.getElementById('infoGrid');
+            const audioPlayer = document.getElementById('audioPlayer');
+
+            // 转换Base64为音频URL
+            const audioBlob = base64ToBlob(result.audio_base64, 'audio/wav');
+            const audioUrl = URL.createObjectURL(audioBlob);
+            
+            audioPlayer.src = audioUrl;
+            currentAudioData = {
+                blob: audioBlob,
+                url: audioUrl,
+                filename: `higgs_audio_${Date.now()}.wav`
+            };
+
+            // 填充信息
+            infoGrid.innerHTML = `
+                <div class="info-item"><strong>文本:</strong> ${result.text}</div>
+                <div class="info-item"><strong>采样率:</strong> ${result.sampling_rate} Hz</div>
+                <div class="info-item"><strong>时长:</strong> ${result.duration.toFixed(2)} 秒</div>
+                <div class="info-item"><strong>Token数:</strong> ${result.usage.total_tokens || 'N/A'}</div>
+            `;
+
+            resultSection.classList.add('show');
+            initializeAudioPlayer();
+        }
+
+        // Base64转Blob
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+
+        // 初始化音频播放器
+        function initializeAudioPlayer() {
+            audioPlayer = document.getElementById('audioPlayer');
+            const playBtn = document.getElementById('playBtn');
+            const progress = document.getElementById('progress');
+            const timeDisplay = document.getElementById('timeDisplay');
+
+            // 更新时间显示
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                updateTimeDisplay();
+            });
+
+            // 更新进度条
+            audioPlayer.addEventListener('timeupdate', () => {
+                const percentage = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progress.style.width = percentage + '%';
+                updateTimeDisplay();
+            });
+
+            // 播放结束
+            audioPlayer.addEventListener('ended', () => {
+                playBtn.textContent = '▶️';
+                progress.style.width = '0%';
+                audioPlayer.currentTime = 0;
+            });
+        }
+
+        // 播放/暂停切换
+        function togglePlay() {
+            const playBtn = document.getElementById('playBtn');
+            
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                playBtn.textContent = '⏸️';
+            } else {
+                audioPlayer.pause();
+                playBtn.textContent = '▶️';
+            }
+        }
+
+        // 进度条点击跳转
+        function seekTo(event) {
+            const progressBar = document.getElementById('progressBar');
+            const rect = progressBar.getBoundingClientRect();
+            const percentage = (event.clientX - rect.left) / rect.width;
+            audioPlayer.currentTime = percentage * audioPlayer.duration;
+        }
+
+        // 更新时间显示
+        function updateTimeDisplay() {
+            const timeDisplay = document.getElementById('timeDisplay');
+            const current = formatTime(audioPlayer.currentTime);
+            const duration = formatTime(audioPlayer.duration);
+            timeDisplay.textContent = `${current} / ${duration}`;
+        }
+
+        // 格式化时间
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // 下载音频
+        function downloadAudio() {
+            if (currentAudioData) {
+                const a = document.createElement('a');
+                a.href = currentAudioData.url;
+                a.download = currentAudioData.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        }
+
+        // 显示错误
+        function showError(message) {
+            const errorSection = document.getElementById('errorSection');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorSection.style.display = 'block';
+        }
+
+        // 回车键提交
+        document.getElementById('textInput').addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'Enter') {
+                generateSpeech();
+            }
+        });
+
+        // 配置名称输入框回车键保存
+        document.getElementById('configNameInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                saveNamedConfig();
+            }
+        });
+    </script>
+</body>
+</html>

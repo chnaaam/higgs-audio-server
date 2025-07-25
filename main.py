@@ -269,7 +269,7 @@ async def generate_voice_clone(request: VoiceCloneRequest):
         audio_content = None
         if request.reference_audio:
             # Use uploaded base64 audio
-            audio_content = AudioContent(raw_audio=request.reference_audio)
+            audio_content = AudioContent(audio_url="", raw_audio=request.reference_audio)
         elif request.reference_voice:
             # Use built-in reference voice
             voice_file = voice_prompts_dir / f"{request.reference_voice}.wav"
@@ -356,7 +356,7 @@ async def generate_multi_speaker(request: MultiSpeakerRequest):
                 audio_contents.append(AudioContent(audio_url=str(voice_file)))
         elif request.reference_audios:
             for audio_b64 in request.reference_audios:
-                audio_contents.append(AudioContent(raw_audio=audio_b64))
+                audio_contents.append(AudioContent(audio_url="", raw_audio=audio_b64))
         
         # Build system message for multi-speaker
         system_prompt = build_system_message(
