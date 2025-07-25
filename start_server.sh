@@ -22,7 +22,7 @@ HOST=${HOST:-"0.0.0.0"}
 PORT=${PORT:-5000}
 MODEL_PATH=${MODEL_PATH:-"bosonai/higgs-audio-v2-generation-3B-base"}
 AUDIO_TOKENIZER_PATH=${AUDIO_TOKENIZER_PATH:-"bosonai/higgs-audio-v2-tokenizer"}
-DEVICE=${DEVICE:-"auto"}
+DEVICE=${DEVICE:-"cuda"}
 
 echo "Configuration:"
 echo "  Host: $HOST"
