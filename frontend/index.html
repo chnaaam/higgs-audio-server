@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Higgs Audio v2 前端</title>
+    <title>Higgs Audio v2 - 智能语音合成系统</title>
     <style>
         * {
             margin: 0;
@@ -617,17 +617,21 @@
             border-radius: 8px;
             padding: 3px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .mode-btn {
             flex: 1;
             background: none;
             border: none;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
+            font-size: 14px;
             transition: all 0.2s ease;
+            min-width: 120px;
+            margin: 1px;
         }
 
         .mode-btn.active {
@@ -653,6 +657,112 @@
             transform: translateX(0);
         }
 
+        .speaker-config {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .speaker-voice-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .voice-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .voice-item {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .voice-item:last-child {
+            border-bottom: none;
+        }
+
+        .voice-info {
+            flex: 1;
+        }
+
+        .voice-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .voice-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .voice-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .voice-type.audio {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .voice-type.profile {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .health-status {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .health-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .health-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .health-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .health-value {
+            color: #666;
+        }
+
+        .health-status.healthy {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .health-status.error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
         @media (max-width: 768px) {
             .form-row,
             .form-row-three,
@@ -671,6 +781,14 @@
             .header h1 {
                 font-size: 2em;
             }
+            
+            .mode-switch {
+                flex-direction: column;
+            }
+            
+            .mode-btn {
+                margin: 2px 0;
+            }
         }
     </style>
 </head>
@@ -682,22 +800,43 @@
         </div>
 
         <div class="form-section">
-            <!-- 模式选择 -->
+            <!-- 功能模式选择 -->
             <div class="mode-switch">
-                <button class="mode-btn active" id="normalModeBtn" onclick="switchMode('normal')">📝 普通生成</button>
+                <button class="mode-btn active" id="basicModeBtn" onclick="switchMode('basic')">📝 基础TTS</button>
                 <button class="mode-btn" id="cloneModeBtn" onclick="switchMode('clone')">🎙️ 语音克隆</button>
+                <button class="mode-btn" id="multiSpeakerModeBtn" onclick="switchMode('multi-speaker')">👥 多说话人</button>
+                <button class="mode-btn" id="experimentalModeBtn" onclick="switchMode('experimental')">🎵 实验模式</button>
+                <button class="mode-btn" id="longFormModeBtn" onclick="switchMode('long-form')">📚 长文本</button>
+                <button class="mode-btn" id="voiceManageModeBtn" onclick="switchMode('voice-manage')">🎛️ 语音管理</button>
             </div>
 
+            <!-- 语音克隆区域 -->
+            <!-- 语音克隆区域 -->
             <!-- 语音克隆区域 -->
             <div class="voice-clone-section" id="voiceCloneSection" style="display: none;">
                 <div class="voice-clone-header">
                     <div class="voice-clone-title">🎙️ 语音克隆</div>
-                    <div class="voice-clone-desc">上传参考音频文件，系统将使用该音色生成语音</div>
+                    <div class="voice-clone-desc">上传参考音频文件或选择预设语音，系统将使用该音色生成语音</div>
+                </div>
+
+                <!-- 语音选择方式 -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="referenceVoiceSelect">预设语音</label>
+                        <select id="referenceVoiceSelect" onchange="handleVoiceSelection()">
+                            <option value="">选择预设语音...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="crossLingual">跨语言克隆</label>
+                        <input type="checkbox" id="crossLingual" style="width: auto; margin: 10px 0;">
+                        <span style="font-size: 14px; color: #666;">启用不同语言的语音克隆</span>
+                    </div>
                 </div>
 
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('audioFileInput').click()">
                     <div class="upload-icon">🎵</div>
-                    <div class="upload-text">点击上传音频文件</div>
+                    <div class="upload-text">或点击上传音频文件</div>
                     <div class="upload-hint">支持 WAV、MP3、FLAC 格式，建议时长3-30秒</div>
                 </div>
 
@@ -709,6 +848,143 @@
                         <button class="remove-btn" onclick="removeAudio()">✕ 移除</button>
                     </div>
                     <audio controls id="previewAudio" style="width: 100%;"></audio>
+                </div>
+            </div>
+
+            <!-- 多说话人对话区域 -->
+            <div class="voice-clone-section" id="multiSpeakerSection" style="display: none;">
+                <div class="voice-clone-header">
+                    <div class="voice-clone-title">👥 多说话人对话</div>
+                    <div class="voice-clone-desc">生成包含多个说话人的对话音频，支持分块处理</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="speakerVoices">说话人语音配置</label>
+                    <div id="speakerVoicesContainer">
+                        <div class="speaker-config">
+                            <input type="text" placeholder="说话人1预设语音名称" class="speaker-voice-input" data-speaker="0">
+                            <button class="config-btn" onclick="addSpeakerConfig()">+ 添加说话人</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="chunkMethod">分块方式</label>
+                        <select id="chunkMethod">
+                            <option value="">不分块</option>
+                            <option value="speaker">按说话人分块</option>
+                            <option value="word">按词数分块</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="chunkMaxWords">最大词数/块</label>
+                        <input type="number" id="chunkMaxWords" value="100" min="10" max="500">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="chunkMaxTurns">最大对话轮数/块</label>
+                    <input type="number" id="chunkMaxTurns" value="1" min="1" max="10">
+                </div>
+            </div>
+
+            <!-- 实验模式区域 -->
+            <div class="voice-clone-section" id="experimentalSection" style="display: none;">
+                <div class="voice-clone-header">
+                    <div class="voice-clone-title">🎵 实验模式</div>
+                    <div class="voice-clone-desc">生成特殊效果音频：哼唱、背景音乐等</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="experimentalMode">实验模式</label>
+                        <select id="experimentalMode">
+                            <option value="humming">哼唱模式</option>
+                            <option value="bgm">背景音乐</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="expReferenceVoice">参考语音</label>
+                        <select id="expReferenceVoice">
+                            <option value="">选择预设语音...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 长文本生成区域 -->
+            <div class="voice-clone-section" id="longFormSection" style="display: none;">
+                <div class="voice-clone-header">
+                    <div class="voice-clone-title">📚 长文本生成</div>
+                    <div class="voice-clone-desc">对长文本进行分块处理，保持语音一致性</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="longFormChunkMethod">分块方式</label>
+                        <select id="longFormChunkMethod">
+                            <option value="word">按词数分块</option>
+                            <option value="sentence">按句子分块</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="longFormMaxWords">最大词数/块</label>
+                        <input type="number" id="longFormMaxWords" value="100" min="50" max="500">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bufferSize">缓冲区大小</label>
+                        <input type="number" id="bufferSize" value="2" min="1" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="longFormReferenceVoice">参考语音</label>
+                        <select id="longFormReferenceVoice">
+                            <option value="">选择预设语音...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 语音管理区域 -->
+            <div class="voice-clone-section" id="voiceManageSection" style="display: none;">
+                <div class="voice-clone-header">
+                    <div class="voice-clone-title">🎛️ 语音管理</div>
+                    <div class="voice-clone-desc">管理系统中的语音资源：查看、上传、删除</div>
+                </div>
+
+                <!-- 语音上传 -->
+                <div class="form-group">
+                    <label>上传新语音</label>
+                    <div class="form-row">
+                        <input type="text" id="voiceName" placeholder="语音名称" style="flex: 1;">
+                        <input type="text" id="voiceDescription" placeholder="语音描述（可选）" style="flex: 2;">
+                    </div>
+                    <div class="upload-area" id="voiceUploadArea" onclick="document.getElementById('voiceFileInput').click()">
+                        <div class="upload-icon">🎤</div>
+                        <div class="upload-text">点击上传语音文件</div>
+                        <div class="upload-hint">支持 WAV、MP3、FLAC 格式</div>
+                    </div>
+                    <input type="file" class="file-input" id="voiceFileInput" accept=".wav,.mp3,.flac" onchange="handleVoiceFileUpload(event)">
+                    <button class="config-btn success" onclick="uploadVoiceFile()">📤 上传语音</button>
+                </div>
+
+                <!-- 语音列表 -->
+                <div class="form-group">
+                    <label>系统语音列表</label>
+                    <button class="config-btn" onclick="loadVoiceList()">🔄 刷新列表</button>
+                    <div id="voiceList" class="voice-list">
+                        <!-- 动态加载语音列表 -->
+                    </div>
+                </div>
+
+                <!-- 健康检查 -->
+                <div class="form-group">
+                    <label>系统状态</label>
+                    <button class="config-btn" onclick="checkHealth()">🏥 检查系统健康状态</button>
+                    <div id="healthStatus" class="health-status">
+                        <!-- 健康状态信息 -->
+                    </div>
                 </div>
             </div>
 
@@ -833,8 +1109,11 @@
         let audioPlayer = null;
         let currentAudioData = null;
         let progressInterval = null;
-        let currentMode = 'normal'; // 'normal' or 'clone'
+        let currentMode = 'basic'; // 'basic', 'clone', 'multi-speaker', 'experimental', 'long-form', 'voice-manage'
         let uploadedAudioFile = null;
+        let availableVoices = [];
+        let speakerCount = 1;
+        let uploadedVoiceFile = null;
 
         // 默认配置
         const DEFAULT_CONFIG = {
@@ -854,26 +1133,72 @@
             setupAutoSave();
             displaySavedConfigs();
             setupDragAndDrop();
+            generateRandomSeed();
+            loadVoiceList();
+            checkHealth();
         });
+
+        // 生成随机种子
+        function generateRandomSeed() {
+            const seedInput = document.getElementById('seed');
+            if (!seedInput.value) {
+                const randomSeed = Math.floor(Math.random() * 1000000);
+                seedInput.value = randomSeed;
+            }
+        }
 
         // 模式切换
         function switchMode(mode) {
             currentMode = mode;
-            const normalBtn = document.getElementById('normalModeBtn');
-            const cloneBtn = document.getElementById('cloneModeBtn');
-            const voiceCloneSection = document.getElementById('voiceCloneSection');
+            
+            // 隐藏所有模式按钮的激活状态
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // 隐藏所有功能区域
+            document.getElementById('voiceCloneSection').style.display = 'none';
+            document.getElementById('multiSpeakerSection').style.display = 'none';
+            document.getElementById('experimentalSection').style.display = 'none';
+            document.getElementById('longFormSection').style.display = 'none';
+            document.getElementById('voiceManageSection').style.display = 'none';
+            
             const generateBtn = document.getElementById('generateBtn');
-
-            if (mode === 'normal') {
-                normalBtn.classList.add('active');
-                cloneBtn.classList.remove('active');
-                voiceCloneSection.style.display = 'none';
-                generateBtn.innerHTML = '🎙️ 生成语音';
-            } else {
-                normalBtn.classList.remove('active');
-                cloneBtn.classList.add('active');
-                voiceCloneSection.style.display = 'block';
-                generateBtn.innerHTML = '🎭 克隆语音';
+            
+            // 根据模式显示相应区域和按钮
+            switch(mode) {
+                case 'basic':
+                    document.getElementById('basicModeBtn').classList.add('active');
+                    generateBtn.innerHTML = '🎙️ 生成语音';
+                    generateBtn.style.display = 'block';
+                    break;
+                case 'clone':
+                    document.getElementById('cloneModeBtn').classList.add('active');
+                    document.getElementById('voiceCloneSection').style.display = 'block';
+                    generateBtn.innerHTML = '🎭 克隆语音';
+                    generateBtn.style.display = 'block';
+                    break;
+                case 'multi-speaker':
+                    document.getElementById('multiSpeakerModeBtn').classList.add('active');
+                    document.getElementById('multiSpeakerSection').style.display = 'block';
+                    generateBtn.innerHTML = '👥 生成多说话人对话';
+                    generateBtn.style.display = 'block';
+                    break;
+                case 'experimental':
+                    document.getElementById('experimentalModeBtn').classList.add('active');
+                    document.getElementById('experimentalSection').style.display = 'block';
+                    generateBtn.innerHTML = '🎵 生成实验音频';
+                    generateBtn.style.display = 'block';
+                    break;
+                case 'long-form':
+                    document.getElementById('longFormModeBtn').classList.add('active');
+                    document.getElementById('longFormSection').style.display = 'block';
+                    generateBtn.innerHTML = '📚 生成长文本语音';
+                    generateBtn.style.display = 'block';
+                    break;
+                case 'voice-manage':
+                    document.getElementById('voiceManageModeBtn').classList.add('active');
+                    document.getElementById('voiceManageSection').style.display = 'block';
+                    generateBtn.style.display = 'none';
+                    break;
             }
         }
 
@@ -1250,7 +1575,7 @@
             updateProgress(0, '正在初始化');
         }
 
-        // 生成语音
+        // 生成语音 - 统一入口
         async function generateSpeech() {
             const apiUrl = document.getElementById('apiUrl').value.trim();
             const text = document.getElementById('textInput').value.trim();
@@ -1260,9 +1585,10 @@
                 return;
             }
 
-            // 语音克隆模式检查
-            if (currentMode === 'clone' && !uploadedAudioFile) {
-                showError('请先上传参考音频文件');
+            // 模式特定检查
+            if ((currentMode === 'clone' || currentMode === 'experimental' || currentMode === 'long-form') && 
+                !uploadedAudioFile && !document.getElementById('referenceVoiceSelect').value) {
+                showError('请选择预设语音或上传参考音频文件');
                 return;
             }
 
@@ -1286,34 +1612,111 @@
             try {
                 let endpoint, requestData;
 
-                if (currentMode === 'clone') {
-                    // 语音克隆模式
-                    endpoint = `${apiUrl}/generate/voice-clone`;
-                    
-                    // 转换音频文件为Base64
-                    const audioBase64 = await fileToBase64(uploadedAudioFile);
-                    
-                    requestData = {
-                        text: text,
-                        reference_audio: audioBase64,
-                        temperature: parseFloat(document.getElementById('temperature').value),
-                        top_p: parseFloat(document.getElementById('topP').value),
-                        top_k: parseInt(document.getElementById('topK').value),
-                        max_new_tokens: parseInt(document.getElementById('maxTokens').value)
-                    };
-                } else {
-                    // 普通生成模式
-                    endpoint = `${apiUrl}/generate`;
-                    requestData = {
-                        text: text,
-                        temperature: parseFloat(document.getElementById('temperature').value),
-                        top_p: parseFloat(document.getElementById('topP').value),
-                        top_k: parseInt(document.getElementById('topK').value),
-                        max_new_tokens: parseInt(document.getElementById('maxTokens').value)
-                    };
+                switch(currentMode) {
+                    case 'basic':
+                        endpoint = `${apiUrl}/generate`;
+                        requestData = {
+                            text: text,
+                            temperature: parseFloat(document.getElementById('temperature').value),
+                            top_p: parseFloat(document.getElementById('topP').value),
+                            top_k: parseInt(document.getElementById('topK').value),
+                            max_new_tokens: parseInt(document.getElementById('maxTokens').value)
+                        };
+                        break;
+                        
+                    case 'clone':
+                        endpoint = `${apiUrl}/generate/voice-clone`;
+                        requestData = {
+                            text: text,
+                            temperature: parseFloat(document.getElementById('temperature').value),
+                            top_p: parseFloat(document.getElementById('topP').value),
+                            top_k: parseInt(document.getElementById('topK').value),
+                            max_new_tokens: parseInt(document.getElementById('maxTokens').value),
+                            cross_lingual: document.getElementById('crossLingual').checked
+                        };
+                        
+                        if (uploadedAudioFile) {
+                            const audioBase64 = await fileToBase64(uploadedAudioFile);
+                            requestData.reference_audio = audioBase64;
+                        } else if (document.getElementById('referenceVoiceSelect').value) {
+                            requestData.reference_voice = document.getElementById('referenceVoiceSelect').value;
+                        }
+                        break;
+                        
+                    case 'multi-speaker':
+                        endpoint = `${apiUrl}/generate/multi-speaker`;
+                        requestData = {
+                            text: text,
+                            temperature: parseFloat(document.getElementById('temperature').value),
+                            top_p: parseFloat(document.getElementById('topP').value),
+                            top_k: parseInt(document.getElementById('topK').value),
+                            max_new_tokens: parseInt(document.getElementById('maxTokens').value)
+                        };
+                        
+                        // 收集说话人语音
+                        const speakerVoices = [];
+                        document.querySelectorAll('.speaker-voice-input').forEach(input => {
+                            if (input.value.trim()) {
+                                speakerVoices.push(input.value.trim());
+                            }
+                        });
+                        
+                        if (speakerVoices.length > 0) {
+                            requestData.reference_voices = speakerVoices;
+                        }
+                        
+                        if (document.getElementById('chunkMethod').value) {
+                            requestData.chunk_method = document.getElementById('chunkMethod').value;
+                            requestData.chunk_max_word_num = parseInt(document.getElementById('chunkMaxWords').value);
+                            requestData.chunk_max_num_turns = parseInt(document.getElementById('chunkMaxTurns').value);
+                        }
+                        break;
+                        
+                    case 'experimental':
+                        endpoint = `${apiUrl}/generate/experimental`;
+                        requestData = {
+                            text: text,
+                            mode: document.getElementById('experimentalMode').value,
+                            temperature: parseFloat(document.getElementById('temperature').value),
+                            top_p: parseFloat(document.getElementById('topP').value),
+                            top_k: parseInt(document.getElementById('topK').value),
+                            max_new_tokens: parseInt(document.getElementById('maxTokens').value)
+                        };
+                        
+                        if (uploadedAudioFile) {
+                            const audioBase64 = await fileToBase64(uploadedAudioFile);
+                            requestData.reference_audio = audioBase64;
+                        } else if (document.getElementById('expReferenceVoice').value) {
+                            requestData.reference_voice = document.getElementById('expReferenceVoice').value;
+                        }
+                        break;
+                        
+                    case 'long-form':
+                        endpoint = `${apiUrl}/generate/long-form`;
+                        requestData = {
+                            text: text,
+                            chunk_method: document.getElementById('longFormChunkMethod').value,
+                            chunk_max_word_num: parseInt(document.getElementById('longFormMaxWords').value),
+                            generation_chunk_buffer_size: parseInt(document.getElementById('bufferSize').value),
+                            temperature: parseFloat(document.getElementById('temperature').value),
+                            top_p: parseFloat(document.getElementById('topP').value),
+                            top_k: parseInt(document.getElementById('topK').value),
+                            max_new_tokens: parseInt(document.getElementById('maxTokens').value)
+                        };
+                        
+                        if (uploadedAudioFile) {
+                            const audioBase64 = await fileToBase64(uploadedAudioFile);
+                            requestData.reference_audio = audioBase64;
+                        } else if (document.getElementById('longFormReferenceVoice').value) {
+                            requestData.reference_voice = document.getElementById('longFormReferenceVoice').value;
+                        }
+                        break;
+                        
+                    default:
+                        throw new Error('未知的生成模式');
                 }
 
-                // 添加可选参数
+                // 添加通用可选参数
                 const scenePrompt = document.getElementById('scenePrompt').value.trim();
                 if (scenePrompt) {
                     requestData.scene_prompt = scenePrompt;
@@ -1371,10 +1774,15 @@
             const audioUrl = URL.createObjectURL(audioBlob);
             
             audioPlayer.src = audioUrl;
+            // 生成包含参数的文件名
+            const config = getCurrentConfig();
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            const filename = `higgs_${currentMode}_${timestamp}_temp${config.temperature}_topP${config.topP}_topK${config.topK}_seed${config.seed || 'random'}.wav`;
+            
             currentAudioData = {
                 blob: audioBlob,
                 url: audioUrl,
-                filename: `higgs_audio_${Date.now()}.wav`
+                filename: filename
             };
 
             // 填充信息
@@ -1499,6 +1907,235 @@
                 saveNamedConfig();
             }
         });
+        
+        // 加载语音列表
+        async function loadVoiceList() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            if (!apiUrl) {
+                showError('请先设置API地址');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${apiUrl}/voices`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const voices = await response.json();
+                availableVoices = voices;
+                
+                // 更新语音选择下拉框
+                updateVoiceSelects(voices);
+                
+                // 更新语音管理列表
+                displayVoiceList(voices);
+                
+            } catch (error) {
+                showError(`加载语音列表失败: ${error.message}`);
+            }
+        }
+        
+        // 更新所有语音选择下拉框
+        function updateVoiceSelects(voices) {
+            const selects = [
+                'referenceVoiceSelect', 'expReferenceVoice', 'longFormReferenceVoice'
+            ];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    // 清空现有选项（保留第一个默认选项）
+                    while (select.children.length > 1) {
+                        select.removeChild(select.lastChild);
+                    }
+                    
+                    // 添加语音选项
+                    voices.forEach(voice => {
+                        const option = document.createElement('option');
+                        option.value = voice.name;
+                        option.textContent = `${voice.name} (${voice.type})`;
+                        if (voice.description) {
+                            option.textContent += ` - ${voice.description}`;
+                        }
+                        select.appendChild(option);
+                    });
+                }
+            });
+        }
+        
+        // 显示语音列表
+        function displayVoiceList(voices) {
+            const voiceList = document.getElementById('voiceList');
+            if (!voiceList) return;
+            
+            if (voices.length === 0) {
+                voiceList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">暂无可用语音</p>';
+                return;
+            }
+            
+            const voiceItems = voices.map(voice => `
+                <div class="voice-item">
+                    <div class="voice-info">
+                        <div class="voice-name">${voice.name}<span class="voice-type ${voice.type}">${voice.type}</span></div>
+                        <div class="voice-desc">${voice.description || '无描述'}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            voiceList.innerHTML = voiceItems;
+        }
+        
+        // 检查系统健康状态
+        async function checkHealth() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            if (!apiUrl) {
+                showError('请先设置API地址');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${apiUrl}/health`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const health = await response.json();
+                displayHealthStatus(health);
+                
+            } catch (error) {
+                displayHealthStatus(null, error.message);
+            }
+        }
+        
+        // 显示健康状态
+        function displayHealthStatus(health, errorMsg) {
+            const healthStatus = document.getElementById('healthStatus');
+            if (!healthStatus) return;
+            
+            if (errorMsg) {
+                healthStatus.className = 'health-status error';
+                healthStatus.innerHTML = `
+                    <div class="health-item">
+                        <span class="health-label">状态：</span>
+                        <span class="health-value" style="color: #dc3545;">连接失败</span>
+                    </div>
+                    <div class="health-item">
+                        <span class="health-label">错误：</span>
+                        <span class="health-value">${errorMsg}</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            healthStatus.className = health.model_loaded ? 'health-status healthy' : 'health-status error';
+            healthStatus.innerHTML = `
+                <div class="health-item">
+                    <span class="health-label">状态：</span>
+                    <span class="health-value" style="color: ${health.status === 'healthy' ? '#28a745' : '#dc3545'};">\u${health.status === 'healthy' ? '2705' : '274c'} ${health.status}</span>
+                </div>
+                <div class="health-item">
+                    <span class="health-label">模型加载：</span>
+                    <span class="health-value" style="color: ${health.model_loaded ? '#28a745' : '#dc3545'};">${health.model_loaded ? '✅ 已加载' : '❌ 未加载'}</span>
+                </div>
+                <div class="health-item">
+                    <span class="health-label">设备：</span>
+                    <span class="health-value">${health.device}</span>
+                </div>
+                <div class="health-item">
+                    <span class="health-label">可用语音：</span>
+                    <span class="health-value">${health.voices_available} 个</span>
+                </div>
+            `;
+        }
+        
+        // 处理语音选择
+        function handleVoiceSelection() {
+            const selectedVoice = document.getElementById('referenceVoiceSelect').value;
+            if (selectedVoice && uploadedAudioFile) {
+                // 如果选择了预设语音且上传了文件，清空上传的文件
+                removeAudio();
+            }
+        }
+        
+        // 添加说话人配置
+        function addSpeakerConfig() {
+            speakerCount++;
+            const container = document.getElementById('speakerVoicesContainer');
+            const speakerDiv = document.createElement('div');
+            speakerDiv.className = 'speaker-config';
+            speakerDiv.innerHTML = `
+                <input type="text" placeholder="说话人${speakerCount}预设语音名称" class="speaker-voice-input" data-speaker="${speakerCount-1}">
+                <button class="config-btn danger" onclick="removeSpeakerConfig(this)">✕ 删除</button>
+            `;
+            container.insertBefore(speakerDiv, container.lastElementChild);
+        }
+        
+        // 删除说话人配置
+        function removeSpeakerConfig(button) {
+            button.parentElement.remove();
+        }
+        
+        // 处理语音文件上传
+        function handleVoiceFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadedVoiceFile = file;
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                // 可以在这里显示文件信息
+            }
+        }
+        
+        // 上传语音文件
+        async function uploadVoiceFile() {
+            if (!uploadedVoiceFile) {
+                showError('请先选择要上传的语音文件');
+                return;
+            }
+            
+            const name = document.getElementById('voiceName').value.trim();
+            const description = document.getElementById('voiceDescription').value.trim();
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            
+            if (!name || !apiUrl) {
+                showError('请填写语音名称和API地址');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', uploadedVoiceFile);
+                formData.append('name', name);
+                if (description) {
+                    formData.append('description', description);
+                }
+                
+                const response = await fetch(`${apiUrl}/upload-voice`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                alert(result.message || '语音上传成功！');
+                
+                // 清空表单
+                document.getElementById('voiceName').value = '';
+                document.getElementById('voiceDescription').value = '';
+                document.getElementById('voiceFileInput').value = '';
+                uploadedVoiceFile = null;
+                
+                // 刷新语音列表
+                loadVoiceList();
+                
+            } catch (error) {
+                showError(`上传失败: ${error.message}`);
+            }
+        }
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Higgs Audio - 语音克隆</title>
+    <title>Higgs Audio v2 - 语音克隆</title>
     <style>
         * {
             margin: 0;
@@ -371,7 +371,8 @@
             <h1>🎙️ Higgs Audio v2</h1>
             <p>智能语音克隆系统</p>
             <div class="nav-links">
-                <a href="generate.html" class="nav-link">📝 语音生成</a>
+                <a href="index.html" class="nav-link">🏠 主页</a>
+                <a href="generate.html" class="nav-link">📝 基础生成</a>
                 <a href="voice-clone.html" class="nav-link active">🎙️ 语音克隆</a>
             </div>
         </div>
@@ -379,11 +380,28 @@
         <div class="form-section">
             <!-- 音频上传区域 -->
             <div class="upload-section">
-                <div class="upload-title">🎵 上传参考音频</div>
+                <div class="upload-title">🎵 选择或上传参考语音</div>
+                
+                <!-- 预设语音选择 -->
+                <div class="form-group">
+                    <label for="referenceVoiceSelect">选择预设语音</label>
+                    <select id="referenceVoiceSelect" onchange="handleVoiceSelection()">
+                        <option value="">选择预设语音...</option>
+                    </select>
+                </div>
+                
+                <!-- 跨语言选项 -->
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="crossLingual" style="width: auto; margin-right: 8px;">
+                        启用跨语言语音克隆
+                    </label>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">允许使用不同语言的参考语音进行克隆</div>
+                </div>
                 
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('audioFileInput').click()">
                     <div class="upload-icon">🎵</div>
-                    <div class="upload-text">点击上传或拖拽音频文件到此处</div>
+                    <div class="upload-text">或点击上传音频文件</div>
                     <div class="upload-hint">支持 WAV、MP3、FLAC 格式<br>建议时长3-30秒，文件小于50MB</div>
                 </div>
 
@@ -401,7 +419,7 @@
             <!-- 服务器配置 -->
             <div class="form-group">
                 <label for="apiUrl">API服务器地址</label>
-                <input type="text" id="apiUrl" value="http://localhost:5000" placeholder="http://localhost:5000">
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
             </div>
 
             <!-- 文本输入 -->
@@ -479,11 +497,23 @@
         let audioPlayer = null;
         let currentAudioData = null;
         let uploadedAudioFile = null;
+        let availableVoices = [];
 
         // 页面加载时初始化
         window.addEventListener('load', function() {
             setupDragAndDrop();
+            generateRandomSeed();
+            loadVoiceList();
         });
+
+        // 生成随机种子
+        function generateRandomSeed() {
+            const seedInput = document.getElementById('seed');
+            if (!seedInput.value) {
+                const randomSeed = Math.floor(Math.random() * 1000000);
+                seedInput.value = randomSeed;
+            }
+        }
 
         // 设置拖拽上传
         function setupDragAndDrop() {
@@ -631,8 +661,11 @@
             errorSection.style.display = 'none';
 
             try {
-                // 转换音频文件为Base64
-                const audioBase64 = await fileToBase64(uploadedAudioFile);
+                let audioBase64;
+                if (uploadedAudioFile) {
+                    // 转换音频文件为Base64
+                    audioBase64 = await fileToBase64(uploadedAudioFile);
+                }
                 
                 const requestData = {
                     text: text,
@@ -654,6 +687,22 @@
                     requestData.seed = parseInt(seed);
                 }
 
+                // 检查输入有效性
+                const referenceVoice = document.getElementById('referenceVoiceSelect').value;
+                if (!uploadedAudioFile && !referenceVoice) {
+                    throw new Error('请选择预设语音或上传音频文件');
+                }
+                
+                // 根据选择设置参数
+                if (uploadedAudioFile) {
+                    requestData.reference_audio = audioBase64;
+                } else if (referenceVoice) {
+                    requestData.reference_voice = referenceVoice;
+                }
+                
+                // 跨语言选项
+                requestData.cross_lingual = document.getElementById('crossLingual').checked;
+                
                 const response = await fetch(`${apiUrl}/generate/voice-clone`, {
                     method: 'POST',
                     headers: {
@@ -689,10 +738,18 @@
             const audioUrl = URL.createObjectURL(audioBlob);
             
             audioPlayer.src = audioUrl;
+            // 生成包含参数的文件名
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            const temperature = document.getElementById('temperature').value;
+            const topP = document.getElementById('topP').value;
+            const topK = document.getElementById('topK').value;
+            const seed = document.getElementById('seed').value || 'random';
+            const filename = `higgs_clone_${timestamp}_temp${temperature}_topP${topP}_topK${topK}_seed${seed}.wav`;
+            
             currentAudioData = {
                 blob: audioBlob,
                 url: audioUrl,
-                filename: `voice_clone_${Date.now()}.wav`
+                filename: filename
             };
 
             // 填充信息
@@ -804,6 +861,50 @@
             errorSection.style.display = 'block';
         }
 
+        // 加载语音列表
+        async function loadVoiceList() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            if (!apiUrl) return;
+            
+            try {
+                const response = await fetch(`${apiUrl}/voices`);
+                if (!response.ok) return;
+                
+                const voices = await response.json();
+                availableVoices = voices;
+                
+                // 更新语音选择下拉框
+                const select = document.getElementById('referenceVoiceSelect');
+                // 清空现有选项（保留第一个默认选项）
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+                
+                // 添加语音选项
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.type})`;
+                    if (voice.description) {
+                        option.textContent += ` - ${voice.description}`;
+                    }
+                    select.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.log('加载语音列表失败:', error);
+            }
+        }
+        
+        // 处理语音选择
+        function handleVoiceSelection() {
+            const selectedVoice = document.getElementById('referenceVoiceSelect').value;
+            if (selectedVoice && uploadedAudioFile) {
+                // 如果选择了预设语音且上传了文件，清空上传的文件
+                removeAudio();
+            }
+        }
+        
         // 回车键提交
         document.getElementById('textInput').addEventListener('keydown', function(event) {
             if (event.ctrlKey && event.key === 'Enter') {

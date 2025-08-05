@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Higgs Audio - 语音生成</title>
+    <title>Higgs Audio v2 - 基础语音生成</title>
     <style>
         * {
             margin: 0;
@@ -274,7 +274,8 @@
             <h1>🎵 Higgs Audio v2</h1>
             <p>智能语音生成系统</p>
             <div class="nav-links">
-                <a href="generate.html" class="nav-link active">📝 语音生成</a>
+                <a href="index.html" class="nav-link">🏠 主页</a>
+                <a href="generate.html" class="nav-link active">📝 基础生成</a>
                 <a href="voice-clone.html" class="nav-link">🎙️ 语音克隆</a>
             </div>
         </div>
@@ -283,7 +284,7 @@
             <!-- 服务器配置 -->
             <div class="form-group">
                 <label for="apiUrl">API服务器地址</label>
-                <input type="text" id="apiUrl" value="http://localhost:5000" placeholder="http://localhost:5000">
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
             </div>
 
             <!-- 文本输入 -->
@@ -361,6 +362,20 @@
         let audioPlayer = null;
         let currentAudioData = null;
 
+        // 页面加载时生成随机种子
+        window.addEventListener('load', function() {
+            generateRandomSeed();
+        });
+
+        // 生成随机种子
+        function generateRandomSeed() {
+            const seedInput = document.getElementById('seed');
+            if (!seedInput.value) {
+                const randomSeed = Math.floor(Math.random() * 1000000);
+                seedInput.value = randomSeed;
+            }
+        }
+
         // 生成语音
         async function generateSpeech() {
             const apiUrl = document.getElementById('apiUrl').value.trim();
@@ -436,10 +451,18 @@
             const audioUrl = URL.createObjectURL(audioBlob);
             
             audioPlayer.src = audioUrl;
+            // 生成包含参数的文件名
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            const temperature = document.getElementById('temperature').value;
+            const topP = document.getElementById('topP').value;
+            const topK = document.getElementById('topK').value;
+            const seed = document.getElementById('seed').value || 'random';
+            const filename = `higgs_normal_${timestamp}_temp${temperature}_topP${topP}_topK${topK}_seed${seed}.wav`;
+            
             currentAudioData = {
                 blob: audioBlob,
                 url: audioUrl,
-                filename: `higgs_audio_${Date.now()}.wav`
+                filename: filename
             };
 
             // 填充信息
