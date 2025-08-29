@@ -1,16 +1,18 @@
-# Higgs Audio v2 REST API 文档
+# Higgs Audio v2 REST API 문서
 
-## 概述
-Higgs Audio v2 REST API 提供强大的文本转语音服务，支持基础TTS生成、零样本语音克隆、多说话人对话生成等功能。
+## 개요
+Higgs Audio v2 REST API는 강력한 텍스트 음성 변환 서비스를 제공하며, 기본 TTS 생성, 제로샷 음성 복제, 다중 화자 대화 생성 등의 기능을 지원합니다.
 
-## 启动服务
+## 서비스 시작
 
-### 基础启动
+### 기본 시작
+
 ```bash
 python main.py --host 0.0.0.0 --port 8000
 ```
 
-### 自定义配置
+### 사용자 정의 설정
+
 ```bash
 python main.py \
   --host 0.0.0.0 \
@@ -20,14 +22,14 @@ python main.py \
   --device cuda
 ```
 
-## API 接口
+## API 인터페이스
 
-### 1. 健康检查
+### 1. 상태 확인
 **GET** `/health`
 
-检查服务状态和模型加载情况。
+서비스 상태와 모델 로딩 상황을 확인합니다.
 
-**响应示例：**
+**응답 예시:**
 ```json
 {
   "status": "healthy",
@@ -37,48 +39,48 @@ python main.py \
 }
 ```
 
-### 2. 获取可用声音列表
+### 2. 사용 가능한 음성 목록 조회
 **GET** `/voices`
 
-获取所有可用的参考声音列表。
+사용 가능한 모든 참조 음성 목록을 조회합니다.
 
-**响应示例：**
+**응답 예시:**
 ```json
 [
   {
     "name": "belinda",
-    "description": "A warm, friendly female voice"
+    "description": "따뜻하고 친근한 여성 음성"
   },
   {
     "name": "chadwick", 
-    "description": "A deep, authoritative male voice"
+    "description": "깊고 권위있는 남성 음성"
   }
 ]
 ```
 
-### 3. 基础文本转语音
+### 3. 기본 텍스트 음성 변환
 **POST** `/generate`
 
-基础的文本转语音生成，模型自动选择合适的声音。
+기본적인 텍스트 음성 변환 생성으로, 모델이 자동으로 적절한 음성을 선택합니다.
 
-**请求参数：**
+**요청 매개변수:**
 ```json
 {
-  "text": "Hello, this is a sample text to convert to speech.",
+  "text": "안녕하세요, 이것은 음성으로 변환할 샘플 텍스트입니다.",
   "temperature": 0.7,
   "top_p": 0.95,
   "top_k": 50,
   "max_new_tokens": 1024,
   "seed": 42,
-  "scene_prompt": "Audio is recorded from a quiet room."
+  "scene_prompt": "조용한 방에서 녹음된 오디오입니다."
 }
 ```
 
-**响应示例：**
+**응답 예시:**
 ```json
 {
   "audio_base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhY...",
-  "text": "Hello, this is a sample text to convert to speech.",
+  "text": "안녕하세요, 이것은 음성으로 변환할 샘플 텍스트입니다.",
   "sampling_rate": 24000,
   "duration": 3.5,
   "usage": {
@@ -89,15 +91,15 @@ python main.py \
 }
 ```
 
-### 4. 零样本语音克隆
+### 4. 제로샷 음성 복제
 **POST** `/generate/voice-clone`
 
-使用参考语音进行零样本语音克隆。
+참조 음성을 사용하여 제로샷 음성 복제를 수행합니다.
 
-**请求参数：**
+**요청 매개변수:**
 ```json
 {
-  "text": "I want to clone this voice to say something new.",
+  "text": "이 음성을 복제하여 새로운 말을 하게 하고 싶습니다.",
   "reference_voice": "belinda",
   "temperature": 0.3,
   "top_p": 0.95,
@@ -105,129 +107,126 @@ python main.py \
 }
 ```
 
-或者使用上传的音频：
+또는 업로드된 오디오 사용:
 ```json
 {
-  "text": "I want to clone this voice to say something new.",
+  "text": "이 음성을 복제하여 새로운 말을 하게 하고 싶습니다.",
   "reference_audio": "UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhY...",
   "temperature": 0.3
 }
 ```
 
-### 5. 多说话人对话生成
+### 5. 다중 화자 대화 생성
 **POST** `/generate/multi-speaker`
 
-生成多说话人对话，支持指定不同说话人的声音。
+다중 화자 대화를 생성하며, 각기 다른 화자의 음성을 지정할 수 있습니다.
 
-**请求参数：**
+**요청 매개변수:**
 ```json
 {
-  "text": "[SPEAKER0] Hello there! How are you today?\n[SPEAKER1] I'm doing great, thanks for asking!",
+  "text": "[SPEAKER0] 안녕하세요! 오늘 어떻게 지내세요?\n[SPEAKER1] 잘 지내고 있어요, 물어봐 주셔서 감사해요!",
   "reference_voices": ["belinda", "chadwick"],
   "temperature": 0.7,
   "max_new_tokens": 2048,
-  "scene_prompt": "A friendly conversation in a coffee shop."
+  "scene_prompt": "카페에서의 친근한 대화."
 }
 ```
 
-### 6. 上传参考声音
+### 6. 참조 음성 업로드
 **POST** `/upload-voice`
 
-上传新的参考声音文件。
+새로운 참조 음성 파일을 업로드합니다.
 
-**Form Data：**
-- `file`: 音频文件 (WAV, MP3, FLAC)
-- `name`: 声音名称 (可选，默认使用文件名)
-- `description`: 声音描述 (可选)
+**Form Data:**
+- `file`: 오디오 파일 (WAV, MP3, FLAC)
+- `name`: 음성 이름 (선택사항, 기본값은 파일명 사용)
+- `description`: 음성 설명 (선택사항)
 
-## 请求参数说明
+## 요청 매개변수 설명
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| text | string | - | 要转换的文本内容 |
-| temperature | float | 0.7 | 生成随机性，0.0-2.0 |
-| top_p | float | 0.95 | 核采样参数，0.0-1.0 |
-| top_k | int | 50 | Top-k采样参数 |
-| max_new_tokens | int | 1024 | 最大生成token数 |
-| seed | int | null | 随机种子，用于可复现生成 |
-| scene_prompt | string | null | 场景描述，提供语音生成的上下文 |
+| 매개변수 | 타입 | 기본값 | 설명 |
+|---------|------|--------|------|
+| text | string | - | 변환할 텍스트 내용 |
+| temperature | float | 0.7 | 생성 임의성, 0.0-2.0 |
+| top_p | float | 0.95 | 핵 샘플링 매개변수, 0.0-1.0 |
+| top_k | int | 50 | Top-k 샘플링 매개변수 |
+| max_new_tokens | int | 1024 | 최대 생성 토큰 수 |
+| seed | int | null | 재현 가능한 생성을 위한 랜덤 시드 |
+| scene_prompt | string | null | 음성 생성의 맥락을 제공하는 장면 설명 |
 
-## 多说话人文本格式
+## 다중 화자 텍스트 형식
 
-对于多说话人对话，请使用以下格式：
+다중 화자 대화의 경우 다음 형식을 사용하세요:
 
 ```
-[SPEAKER0] 第一个说话人的文本内容
-[SPEAKER1] 第二个说话人的文本内容
-[SPEAKER0] 第一个说话人的回应
+[SPEAKER0] 첫 번째 화자의 텍스트 내용
+[SPEAKER1] 두 번째 화자의 텍스트 내용
+[SPEAKER0] 첫 번째 화자의 응답
 ```
 
-## 音频格式
+## 오디오 형식
+- 입력 오디오: WAV, MP3, FLAC 형식 지원
+- 출력 오디오: WAV 형식, 24kHz 샘플링 레이트
+- 인코딩: Base64 인코딩된 오디오 데이터
 
-- 输入音频：支持 WAV, MP3, FLAC 格式
-- 输出音频：WAV 格式，24kHz 采样率
-- 编码：Base64 编码的音频数据
+## 오류 처리
 
-## 错误处理
+API는 표준 HTTP 상태 코드를 사용합니다:
+- `200`: 요청 성공
+- `400`: 요청 매개변수 오류
+- `500`: 서버 내부 오류
+- `503`: 서비스 사용 불가 (모델 미로딩)
 
-API 使用标准 HTTP 状态码：
-
-- `200`: 请求成功
-- `400`: 请求参数错误
-- `500`: 服务器内部错误
-- `503`: 服务不可用（模型未加载）
-
-**错误响应示例：**
+**오류 응답 예시:**
 ```json
 {
-  "detail": "Reference voice 'unknown_voice' not found. Available: ['belinda', 'chadwick', 'mabel']"
+  "detail": "참조 음성 'unknown_voice'를 찾을 수 없습니다. 사용 가능한 음성: ['belinda', 'chadwick', 'mabel']"
 }
 ```
 
-## 使用示例
+## 사용 예제
 
-### Python 客户端示例
+### Python 클라이언트 예제
 
 ```python
 import requests
 import base64
 
-# 基础TTS
+# 기본 TTS
 response = requests.post('http://localhost:8000/generate', json={
-    'text': 'Hello, world!',
+    'text': '안녕, 세상아!',
     'temperature': 0.7
 })
 result = response.json()
 
-# 保存音频
+# 오디오 저장
 with open('output.wav', 'wb') as f:
     f.write(base64.b64decode(result['audio_base64']))
 
-# 语音克隆
+# 음성 복제
 response = requests.post('http://localhost:8000/generate/voice-clone', json={
-    'text': 'This is a cloned voice speaking.',
+    'text': '이것은 복제된 음성이 말하고 있습니다.',
     'reference_voice': 'belinda'
 })
 ```
 
-### cURL 示例
+### cURL 예제
 
 ```bash
-# 基础TTS
+# 기본 TTS
 curl -X POST "http://localhost:8000/generate" \
      -H "Content-Type: application/json" \
-     -d '{"text": "Hello, world!", "temperature": 0.7}'
+     -d '{"text": "안녕, 세상아!", "temperature": 0.7}'
 
-# 检查健康状态
+# 상태 확인
 curl -X GET "http://localhost:8000/health"
 
-# 获取可用声音
+# 사용 가능한 음성 조회
 curl -X GET "http://localhost:8000/voices"
 ```
 
-## 性能建议
-
-- 建议使用GPU（至少24GB显存）以获得最佳性能
-- 对于生产环境，建议调整 `max_new_tokens` 参数以控制生成长度
-- 使用较低的 `temperature` 值（0.3-0.7）可以获得更稳定的输出
-- 批量请求时建议设置合适的超时时间
+## 성능 권장사항
+- 최적의 성능을 위해 GPU 사용을 권장합니다 (최소 24GB VRAM)
+- 프로덕션 환경에서는 생성 길이 제어를 위해 `max_new_tokens` 매개변수를 조정하는 것을 권장합니다
+- 더 안정적인 출력을 위해 낮은 `temperature` 값 (0.3-0.7)을 사용하세요
+- 배치 요청 시 적절한 타임아웃 시간을 설정하는 것을 권장합니다
